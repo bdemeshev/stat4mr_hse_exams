@@ -1,0 +1,621 @@
+% arara: xelatex: {shell: yes}
+%% arara: biber
+%% arara: xelatex: {shell: yes}
+%% arara: xelatex: {shell: yes}
+
+
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+
+\usepackage[base]{babel} % hypenation
+% see: https://tex.stackexchange.com/questions/400986/hyphenrules-environment-no-longer-works-with-polyglossia
+\usepackage{polyglossia}
+
+% \setdefaultlanguage{russian}
+\setmainlanguage{english}
+\setotherlanguages{russian}
+
+% download "Linux Libertine" OTF-fonts:
+% http://www.linuxlibertine.org/index.php?id=91&L=1
+\setmainfont{Linux Libertine O} % or Helvetica, Arial, Cambria
+% why do we need \newfontfamily:
+% http://tex.stackexchange.com/questions/91507/
+\newfontfamily{\cyrillicfonttt}{Linux Libertine O}
+\newfontfamily{\cyrillicfont}{Linux Libertine O}
+\newfontfamily{\cyrillicfontsf}{Linux Libertine O}
+ 
+\usepackage{etoolbox} % to use ifdef, must be after babel
+
+\newtoggle{excerpt}
+\togglefalse{excerpt}  % помечаем, что это не отрывок, а далее в тексте может использовать
+ 
+
+\usepackage[paper=a4paper,
+top=15mm,
+bottom=13.5mm,
+left=13mm, right=13mm, includefoot]{geometry}
+
+\usepackage{etex} % расширение классического tex
+% в частности позволяет подгружать гораздо больше пакетов, чем мы и займёмся далее
+
+
+
+
+\usepackage{makeidx} % для создания предметных указателей
+\usepackage{verbatim} % для многострочных комментариев
+%\usepackage[pdftex]{graphicx} % для вставки графики
+% omit pdftex option if not using pdflatex
+
+\usepackage{comment} % для команды excludecomment
+
+
+%\usepackage{dsfont} % шрифт для единички с двойной палочкой (для индикатора события)
+\usepackage{bbm} % шрифт - двойные буквы
+
+
+\usepackage[usenames, dvipsnames, svgnames, table, rgb]{xcolor}
+
+\usepackage{colortbl}
+
+
+% пакет для тестов:
+% \usepackage[box, % запрет на перенос вопросов
+% nopage, % убираем колонтитулы страницы
+% insidebox, % ставим буквы в квадратики
+% separateanswersheet, % добавляем бланк ответов
+% nowatermark, % отсутствие надписи "Черновик"
+% indivanswers,  % показываем верные ответы
+% answers,
+% lang=RU, % локализация слов "нет верных ответов", "вопрос" и тд
+% completemulti % добавлять "нет правильного ответа" во всех вопросах множественного выбора
+% ]{automultiplechoice}
+
+
+\usepackage[colorlinks, hyperindex, unicode, breaklinks]{hyperref} % гиперссылки в pdf
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{epsfig}
+\usepackage{bm}
+\usepackage{color}
+
+\usepackage{multicol}
+\usepackage{multirow} % Слияние строк в таблице
+
+\usepackage{textcomp}  % Чтобы в формулах можно было русские буквы писать через \text{}
+
+%\usepackage{embedfile} % отказались от внедрения тех внутрь pdf так как всё равно всё на гитхабе :)
+
+\usepackage{physics} % \abs \norm \grad, меняет \sin, \cos...
+
+\usepackage{subfigure} % для создания нескольких рисунков внутри одного
+
+\usepackage{tikz, pgfplots} % язык для рисования графики из latex'a
+\usetikzlibrary{trees} % прибамбас в нем для рисовки деревьев
+\usetikzlibrary{arrows} % прибамбас в нем для рисовки стрелочек подлиннее
+\usetikzlibrary{automata, arrows, positioning, calc}
+\usepackage{tikz-qtree} % прибамбас в нем для рисовки деревьев
+
+
+
+
+\usepackage{enumitem} % развернутые списки
+
+% свешиваем пунктуацию (т.е. знаки пунктуации могут вылезать за правую границу текста, при этом текст выглядит ровнее)
+\usepackage{microtype}
+
+% более красивые таблицы
+\usepackage{booktabs}
+% заповеди из докупентации:
+% 1. Не используйте вертикальные линни
+% 2. Не используйте двойные линии
+% 3. Единицы измерения - в шапку таблицы
+% 4. Не сокращайте .1 вместо 0.1
+% 5. Повторяющееся значение повторяйте, а не говорите "то же"
+
+\usepackage[cache=false]{minted} % вставка кода, нужен питон :)
+% опция cache=false включена, чтобы избегать необходимости
+% чистить кэш при ошибках компиляции
+% возможно вообще подумать об устранении этого пакета:
+% вставок кода мало, а эта зависимость (pygmentize + python)
+% резко затрудняет редактирование новичкам
+% может обойтись listings?
+
+\usepackage{epigraph}
+
+\usepackage{titleps} % заголовки страниц
+
+
+
+
+% по поводу заголовков разделов в колонтитулах
+% https://tex.stackexchange.com/questions/236705
+% поэтому выбрали titleps вместо fancyhdr
+
+\newpagestyle{mypage}{%
+  \headrule
+  \sethead{\sectiontitle}{}{\subsectiontitle}
+  \setfoot{}{}{\thepage}
+}
+\settitlemarks{section,subsection,subsubsection} % !!!!!!no space after comma!!!!!!
+\pagestyle{mypage}
+
+
+
+
+
+\DeclareMathOperator{\Lin}{\mathrm{Lin}}
+\DeclareMathOperator{\Linp}{\Lin^{\perp}}
+\DeclareMathOperator*\plim{plim}
+\DeclareMathOperator{\card}{card}
+\DeclareMathOperator{\sgn}{sign}
+\DeclareMathOperator{\sign}{sign}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\amn}{arg\,min}
+\DeclareMathOperator*{\amx}{arg\,max}
+\DeclareMathOperator{\cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Corr}{Corr}
+\DeclareMathOperator{\pCorr}{pCorr}
+\DeclareMathOperator{\E}{\mathbb{E}}
+\let\P\relax
+\DeclareMathOperator{\P}{\mathbb{P}}
+
+
+\newcommand{\cN}{\mathrm{N}}
+\newcommand{\cU}{\mathrm{U}}
+\newcommand{\cBinom}{\mathrm{Binom}}
+\newcommand{\cBin}{\cBinom}
+\newcommand{\cExp}{\mathrm{Exp}}
+\newcommand{\cPois}{\mathrm{Pois}}
+\newcommand{\cBeta}{\mathrm{Beta}}
+\newcommand{\cGamma}{\mathrm{Gamma}}
+
+\newcommand \R{\mathbb{R}}
+\newcommand \N{\mathbb{N}}
+\newcommand \Z{\mathbb{Z}}
+
+
+
+
+
+\newcommand{\dx}[1]{\,\mathrm{d}#1} % для интеграла: маленький отступ и прямая d
+\newcommand{\ind}[1]{\mathbbm{1}_{\{#1\}}} % Индикатор события
+%\renewcommand{\to}{\rightarrow}
+\newcommand{\eqdef}{\mathrel{\stackrel{\rm def}=}}
+\newcommand{\iid}{\mathrel{\stackrel{\rm i.\,i.\,d.}\sim}}
+\newcommand{\const}{\mathrm{const}}
+
+
+% вместо горизонтальной делаем косую черточку в нестрогих неравенствах
+\renewcommand{\le}{\leqslant}
+\renewcommand{\ge}{\geqslant}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+
+
+
+\AddEnumerateCounter{\asbuk}{\russian@alph}{щ} % для списков с русскими буквами
+% \setlist[enumerate, 2]{label=\asbuk*),ref=\asbuk*} % \asbuk* \alph* \arabic*
+
+
+
+
+% делаем короче интервал в списках
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+
+% \newenvironment{problem}{}{}
+% тут перещёлкиваем комментарий, чтобы убрать или показать решения:
+% \newenvironment{sol}{}{} % with solutions
+% \excludecomment{sol} % without solutions
+
+
+
+\unitlength=0.6mm
+
+\title{Statistics for Market Research exams}
+\date{\today}
+\author{Angry Teachers, Folklore}
+
+
+%%%%%%%%%%%%%%%%%% вставки
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Списки без уродских отступов
+\newenvironment{enumerate*}{
+\begin{enumerate}
+  \setlength{\itemsep}{0pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+}{\end{enumerate}}
+
+\newenvironment{itemize*}{
+\begin{itemize}
+  \setlength{\itemsep}{0pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+}{\end{itemize}}
+
+\abovedisplayskip=0mm
+\abovedisplayshortskip=0mm
+\belowdisplayskip=0mm
+\belowdisplayshortskip=0mm
+
+
+% https://tex.stackexchange.com/questions/241343
+% https://tex.stackexchange.com/questions/168480
+\emergencystretch 5em % разрешаем дополнительные пробелы для упаковки параграфа до правой границы
+
+
+% \setcounter{secnumdepth}{0} % убираем нумерацию секций, подсекций и т.д.
+
+
+%%%%%%%%%%%
+% блок для тестов
+%%%%%%%%%%%
+% [1][3] 1 = one argument, 3 = value if missing
+% эта магия создаёт окружение answerlist
+% именно в окружении answerlist записаны варианты ответов в подключаемых exerciseXX
+% просто \begin{answerlist} сделает ответы в три столбца
+% если ответы длинные, то надо в них руками сделать
+% \begin{answerlist}[1] чтобы они шли в один столбец
+\newenvironment{answerlist}[1][3]{
+\begin{multicols}{#1}
+\begin{enumerate}[label=\fbox{\emph{\Alph*}},ref=\emph{\alph*}]
+}
+{
+\end{enumerate}
+\end{multicols}
+}
+
+
+\excludecomment{solution} % without solutions
+
+\theoremstyle{definition}
+
+% опция [subsection] для сброса счётчика вопросов после каждой subsection
+\newtheorem{question}{Вопрос}[subsection]
+
+% чтобы номер вопроса был без номера секции:
+\renewcommand{\thequestion}{\arabic{question}}
+% конец блока для тестов
+%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+\begin{document}
+\maketitle
+
+%\clearpage
+%\thispagestyle{empty}
+\tableofcontents{}
+
+
+\parindent=0 pt % no indent
+
+\clearpage
+\section*{Description}
+
+See updates at \url{https://github.com/bdemeshev/stat4mr_exams}.
+
+Click on red hyperlinks inside pdf, you can get to the answers and back!
+
+
+Any comments? Bugs?
+\url{https://github.com/bdemeshev/stat4mr_exams/issues/}.
+
+The order of topics has changed after the first course iteration in 2020-21.
+The interested reader may find relevant exercises by looking through all 2020-21 exams. 
+
+
+\subsection*{Greatings to the contributors}
+
+Here we describe only the style guidelines and typical erros. 
+For more information on tex one may read the 
+\href{http://www.ccas.ru/voron/download/voron05latex.pdf}{book} by K. Vorontsov.
+
+\begin{enumerate}
+
+\item Use decimal point as a separator: $3.14$ — good style, $3{,}14$ — bad style.
+This goes against russian tradition, but favors copy-pasting numbers in software for computations. 
+% \item Существует длинное тире, —, которое отличается от просто дефиса - и нужно,
+% чтобы разделять части предложения, \href{https://ru.wikihow.com/напечатать-тире}{Инструкция
+% в картинках по набору тире :)}
+\item Use \verb|\[|\ldots\verb|\]| for display math formulas. Do not use \$\$\ldots\$\$!
+\item Use \verb|cases| for systems of equations,
+\verb|align*| for multiline formulas, \verb|enumerate| for enumerations.
+\item Inside formulas use \verb|\text{|\ldots\} to write text.
+\item Use \verb|\ldots| for ellipsis.
+\item You can find useful macros in the preamble, like \verb|\P, \E, \Var, \Cov, \Corr, \cN|.
+\item Use backslash before functions: \verb|\ln, \exp, \cos|\ldots
+\item Use booktabs style for tables. You may use online \href{https://www.tablesgenerator.com}{tablesgenerator}. 
+Choose booktabs table style instead of default table style.
+\item Respect the letter ё! :)
+\item Start every sentence in tex source from a new line. 
+There will be no additional newlines in final pdf but tex file will be easier to read.
+% \item В перечислениях после «Найдите» используй в качестве знаков препинания точки
+% с запятой и точку в конце.
+\item For multiplication use \verb|\cdot|. Please never use \verb|*| :)
+\end{enumerate}
+
+% стандарт имени файла:
+% добавляется _sol в файле с решениями
+
+%\input{chapters/october.tex}
+%\input{chapters/december.tex}
+%\input{chapters/april.tex}
+%\input{chapters/final.tex}
+
+% \section{Ответы}
+
+
+%\input{chapters/october_sol.tex}
+%\input{chapters/december_sol.tex}
+%\input{chapters/april_sol.tex}
+%\input{chapters/final_sol.tex}
+
+
+
+\section{2022-2023}
+
+\subsection{2022-12-22 demo}
+
+
+Rules: two parts, two hours in total, one A4 cheat sheet is allowed. 
+
+\vspace{1cm}
+
+Part 1. Test part, only numerical answers are checked, 6 questions, each question gives 1 point but no more than 4 points in total. 
+This part is very predictable :) 
+
+\begin{enumerate}
+    \item (bootstrap) I have a sample $X_1$, \ldots, $X_{100}$.
+    
+    I generate one naive bootstrap sample $X^{*}_{1}$, \ldots, $X^{*}_{100}$. 
+
+    What is the probability that the first observation will be present in the bootstrap sample 2 times or more?
+
+    \item (welch) We have data for an $AB$-experiment $\bar X_a = 10$, $\bar X_b = 12$, 
+    $n_a = 20$, $n_b = 30$, $\sum (X_i^a - \bar X_a)^2 = 100$, $\sum (X_i^b - \bar X_b)^2 = 200$.
+
+    Calculate the standard error of $\bar X_a - \bar X_b$ for the Welch test. 
+    
+    \item (mw test) I have five results of two runners $A$ and $B$ for the 5 km race: 25:12 (A), 26:34 (B), 27:43 (A), 28:12 (A), 29:05 (B).
+    
+    Calculate Mann-Whitney statistic $U_A$ that tests the null-hypothesis of equal distributions of time. 
+    
+    (The statistic $U_A$ should positively depend on the ranks of the runner $A$). 
+
+    \item (multiple comparison) I have 100 hypothesis with independent statistics. 
+    The null hypothesis for all 100 cases is actually true, but I don't know this. 
+    
+    I calculate all p-values. 
+    If the two lowest p-value are both lower than $0.05$ I wrongly conclude that not all $H_0$ are true. 
+    Otherwise I correctly conclude that all $H_0$ are true. 
+
+    What is the probability that I will get the correct conclusion?
+
+    \item (sample size) My target variable is binary and I wish 
+    minimal detectable effect equal to $0.01$, probability of I-error  not greater than $0.02$, 
+    probability of II-error not greater than $0.10$, control and experimental group of the same size equal to $n$.
+
+    What is minimal value of $n$?
+
+
+    \item (anova 1+2) Vasiliy loves to eat shaurma. He has three local shaurma dealers. Vasiliy bought 7 shaurmas from each dealer. 
+    and measured their weight. He would like to test the hypothesis that mean weight is the same for all dealers. 
+
+    Total sum of squares is 1000, between sum of squares is 500. 
+
+    Calculate the $F$-statistic to test the hypothesis.
+        
+\end{enumerate}
+
+Part 2. Open part, solutions are required, 4 problems, each problem gives 2 points but no more than 6 points in total.
+This part is almost unpredictable :)
+
+\begin{enumerate}
+ \item Let random variables $Y_1$, \ldots, $Y_n$ be iid uniform $U[0;1]$.
+    Consider the naive bootstrap sample $Y_1^*$, \ldots, $Y_n^*$.
+
+    Find $\Var(Y_1^*)$, $\Cov(Y_1^*, Y_2^*)$, $\Var(\bar Y^*)$.
+
+    \item Winnie-the-Pooh simulteneously tests $h$ null hypothesis using independent samples. 
+    All the null hypothesis are true but Winnie does not know it. 
+    
+    \begin{enumerate}
+        \item What is the probability that the highest P-value will be greater than $0.95$?
+        \item What is the possible range for the probability in point (a) if exactly one null hypothesis is false?
+    \end{enumerate}
+
+    \item The correlation matrix of standardized variables $a$, $b$ and $c$ is given by
+    \[
+    C = \begin{pmatrix}
+        1 & 0.2 & 0 \\
+         & 1 &  0.2 \\
+         & & 1 \\
+    \end{pmatrix}
+    \]
+
+    Let $p_1$, $p_2$ and $p_3$ be the principal components. 
+
+    \begin{enumerate}
+        \item Express $p_1$ in terms of $a$, $b$ and $c$. 
+        \item Express $b$ in terms of $p_1$, $p_2$ and $p_3$. 
+        \item How would you restore the second observation of variable $b$ if you know that first and second 
+        components for the second observation are equal to $-1$ and $2$ respectively?
+    \end{enumerate}
+
+    \item Consider the Mann-Whitney test with possible ties. 
+    The variables $X_1$, $X_2$, \ldots, $X_{n_x}$ are iid Poisson with rate $\lambda =1$. 
+    The variables $Y_1$, $Y_2$, \ldots, $Y_{n_y}$ are iid Poisson with the same rate, independent from $X$ sample. 
+
+    Let $L$ be the number of all pairs $(X_i, Y_j)$ such that $X_i > Y_j$.
+
+    \begin{enumerate}
+        \item Find $\E(L)$, $\Var(L)$. 
+        \item What is the probability that the ordered sequence of all $X_i$ and $Y_j$ will start with 
+        three or more members from $X$-sample?
+    \end{enumerate}
+
+\end{enumerate}
+
+\subsection{2022-12-22 exam}
+
+Part 1. Test part, only numerical answers are checked, 6 questions, each question gives 1 point but no more than 4 points in total. 
+
+\begin{enumerate}
+
+
+\item I have a sample \(X_1, \ldots, X_{90}\).
+I generate one naive bootstrap sample \(X^*_1, \ldots, X^*_{90}\).
+    
+What is the probability that the first observation will be present in the bootstrap sample exactly 3 times?
+\item  We have data of an AB experiment: \(\bar X_a = 5.4\), \(\bar X_b = 6\),
+\(n_a = 18\), \(n_b = 15\), \(\sum (X_i^a - \bar X_a)^2 = 890\),
+\(\sum (X_i^b - \bar X_b)^2 = 800\).
+
+Calculate the estimate of variance of \(\bar X_a - \bar X_b\) for the Welch test.
+
+\item I have five results of two runners A and B for the 5 km race:
+
+16:49 (B), 21:17 (A), 18:30 (B), 6:18 (B), 20:16 (A), 15:39 (B).
+
+Calculate Mann-Whitney statistic \(U_A\) that tests the null-hypothesis of equal distributions of time.
+
+(The statistic \(U_A\) should positively depend on the ranks of the runner A).
+
+\item  I have 30 hypothesis with independent statistics. The null hypothesis for all 30
+cases is actually true, but I don't know this.
+
+I calculate all p-values.
+If the 4 lowest p-value are simultaneously lower than 0.01 I wrongly conclude that not all \(H_0\) are true. 
+Otherwise I correctly conclude that all \(H_0\) are true.
+
+What is the probability that I will get the correct conclusion?
+
+\item My target variable is binary and I wish minimal detectable effect equal to 0.04, 
+probability of I-error not greater than 0.01, probability of II-error not greater than $0.2$. 
+The control and experimental group are of the same size equal to \(n\).
+
+Which minimal value of \(n\) is sufficient in the worst case?
+
+\item Vasiliy loves to eat shaurma. He has \(5\) local shaurma dealers. Vasiliy bought \(4\) shaurmas
+from each dealer and measured their weight. He would like to test the hypothesis that mean weight is the
+same for all dealers.
+
+Total sum of squares is \(600\), between sum of squares is \(100\)
+Calculate the F -statistic to test the hypothesis.
+
+\end{enumerate}
+
+
+Part 2. Open part, solutions are required, 4 problems, each problem gives 2 points but no more than 6 points in total.
+
+
+\begin{enumerate}[resume]
+    \item Let random variables $Y_1$, \ldots, $Y_n$ be iid uniform $U[0;1]$.
+    Consider the naive bootstrap sample $Y_1^*$, \ldots, $Y_n^*$.
+    
+    Find $\P(Y_1^* = Y_1)$, $\Cov(Y_1^*, Y_2)$, $\P(\max\{Y_1, \ldots, Y_n\} = \max\{Y_1^*, \ldots, Y_n^*\})$.
+    
+    \item The eigenvalues of sample correlation matrix are $2.5$, $0.3$ and $0.2$. 
+    The eigenvalue $\lambda=2.5$ corresponds to eigenvector $v=(3, 4, -2)$.
+
+    \begin{enumerate}
+        \item James Bond predicts every original variable using multivariate regression on the first two components.
+        What is the average value of $R^2$ he will get? 
+        \item Express the first principal component in terms of scaled original variables $a$, $b$ and $c$. 
+    \end{enumerate}
+    \item Winnie-the-Pooh simulteneously tests $h$ null hypothesis using independent samples. 
+    All the null hypothesis are true but Winnie does not know it. 
+    
+    \begin{enumerate}
+        \item What is the expected value of the lowest P-value?
+        \item What is the expected number of wrongly regected hypothesis if Winnie rejects all the hypothesis with P-value less $0.1$?
+    \end{enumerate}
+
+
+\item There are three continuosly distributed samples of the same size $n$, $X_1$, \ldots, $X_n$, $Y_1$, \ldots, $Y_n$,
+$Z_1$, \ldots, $Z_n$. Imagine that the null hypothesis that all samples have the same distribution is true. 
+
+Consider the random variable $R_X$ — the sum of ranks of the $X$ sample in the pooled sample. 
+
+\begin{enumerate}
+    \item Find the expected value $\E(R_X)$.
+    \item What is the probability that $R_X$ will be equal to $n(n+1)/2$?
+\end{enumerate}
+
+
+\end{enumerate}
+
+
+
+
+\addcontentsline{toc}{section}{Answer, hints and solutions} % руками добавляем фейковую секцию Ответы в оглавление
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}% Allow only \chapter in ToC
+
+
+\subsection{2022-12-22 demo solutions}
+
+
+\subsection{2022-12-22 exam solutions}
+
+\begin{enumerate}
+    \item \begin{enumerate}
+        \item (2 points) $\P(Y_1^* = Y_1) = 1/n$
+        \item (4 points) 
+        \[
+        \Cov(Y_1^*, Y_2) = \Cov(I_1 Y_1 + \ldots + I_n Y_n, Y_2) = \Cov(I_2 Y_2, Y_2);    
+        \] 
+        \[
+        \Cov(I_2 Y_2, Y_2) = \E(I_2 Y_2^2) - \E(I_2 Y_2)\E(Y_2) = \frac{1}{n}\Var(Y_2) = \frac{1}{12n}    
+        \]
+        \item (4 points)
+        \[
+        \P( \max\{Y_1^*, \ldots, Y_n^*\} = \max\{Y_1, \ldots, Y_n\}) = 1 - \left(\frac{n-1}{n}\right)^n \approx 1 - e^{-1}
+        \]
+    \end{enumerate}
+    \item \begin{enumerate}
+        \item (5 points) 
+        \[
+            \text{average }R^2 = \frac{2.5 + 0.3}{2.5 + 0.3 + 0.2} = \frac{28}{30} \approx 0.93
+        \]
+        \item (5 points)
+        \[
+        p = \frac{3}{\sqrt{29}}a + \frac{4}{\sqrt{29}}b - \frac{2}{\sqrt{29}}c    
+        \]
+    \end{enumerate}
+    \item \begin{enumerate}
+        \item (5 points) One possible solution: obtain the density of minimal p-value (3 points) and calculate expected value (2 poitns):
+        \[
+        f(m) = h (1 - m)^{h-1}, \text{ where } m \in [0;1]    
+        \]
+        \[
+        \E(M) = \int_0^1 m f(m) dm = \frac{1}{h + 1}    
+        \]
+        \item (5 poinst) Note that $N_{\text{wrong}} \sim \mathrm{Bin}(h, 0.1)$. Hence $\E(N_{\text{wrong}}) = 0.1 h$.
+    \end{enumerate}
+    \item \begin{enumerate}
+        \item (5 points)
+        \[
+        \E(R_X) = n \E(R(X_1)) = n \frac{1 + 3n}{2}    
+        \]
+        \item (5 points)
+        \[
+        \P(\text{X-obs are before other obs})  = \frac{1}{C_{3n}^n} = \frac{n!(2n)!}{(3n)!}   
+        \]
+    \end{enumerate}
+\end{enumerate}
+\end{document}
